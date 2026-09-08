@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>メニュー表メーカー</title>
+<style>
+  :root {
+    --bg: #196629;
+    --surface: #FFFFFF;
+    --text-on-bg: #F2F5EF;
+    --text-main: #22301E;
+    --text-sub: #5C6B55;
+    --accent: #8C4A16;
+    --danger: #B3261E;
+    --border: #D8DCCF;
+    --mm: 3.7795275591px; /* 1mm at 96dpi */
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text-on-bg);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  h1 {
+    font-size: 18px;
+    margin: 0;
+    color: var(--text-on-bg);
+  }
+
+  p.lead {
+    margin: 0;
+    color: var(--text-on-bg);
+    font-size: 14px;
+  }
+
+  label {
+    display: block;
+    font-size: 14px;
+    color: var(--text-on-bg);
+    margin-bottom: 8px;
+  }
+
+  input[type="text"],
+  textarea {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    font-family: system-ui, sans-serif;
+    color: var(--text-main);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  textarea {
+    min-height: 140px;
+    resize: vertical;
+  }
+
+  .size-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 16px;
+  }
+
+  .size-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: var(--text-main);
+    font-size: 16px;
+    padding: 8px;
+  }
+
+  #errorLine {
+    color: var(--danger);
+    font-size: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    display: none;
+    white-space: normal;
+  }
+
+  #errorLine.show {
+    display: block;
+  }
+
+  button {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+    font-family: system-ui, sans-serif;
+    color: #FFFFFF;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  button:active {
+    opacity: 0.85;
+  }
+
+  #previewOuter {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    overflow-x: auto;
+    padding: 8px;
+  }
+
+  #previewWrapper {
+    overflow: hidden;
+  }
+
+  #previewInner {
+    transform-origin: top left;
+  }
+
+  .a4-page {
+    background: #FFFFFF;
+    box-shadow: 0 0 0 1px var(--border);
+    box-sizing: border-box;
+    width: calc(210 * var(--mm));
+    height: calc(297 * var(--mm));
+    padding: calc(15 * var(--mm));
+    position: relative;
+    overflow: visible;
+
+    --fs-title: calc(7 * var(--mm));
+    --fs-category: calc(5 * var(--mm));
+    --fs-item: calc(4.2 * var(--mm));
+    --fs-desc: calc(3.0 * var(--mm));
+    --row-pad: calc(1.6 * var(--mm));
+  }
+
+  .a4-page.size-small {
+    --fs-title: calc(6 * var(--mm));
+    --fs-category: calc(4.2 * var(--mm));
+    --fs-item: calc(3.5 * var(--mm));
+    --fs-desc: calc(2.6 * var(--mm));
+    --row-pad: calc(1.2 * var(--mm));
+  }
+
+  .menu-title {
+    font-size: var(--fs-title);
+    font-weight: bold;
+    color: var(--text-main);
+    margin-bottom: calc(4 * var(--mm));
+  }
+
+  .menu-category {
+    font-size: var(--fs-category);
+    font-weight: bold;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: calc(1 * var(--mm));
+    margin-top: calc(4 * var(--mm));
+    margin-bottom: calc(2 * var(--mm));
+  }
+
+  .menu-category:first-child {
+    margin-top: 0;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: baseline;
+    gap: calc(1.5 * var(--mm));
+    padding: var(--row-pad) 0 0 0;
+  }
+
+  .menu-item .item-name {
+    font-size: var(--fs-item);
+    color: var(--text-main);
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+
+  .menu-item .leader {
+    flex: 1;
+    min-width: calc(2 * var(--mm));
+    border-bottom: 1px dotted var(--border);
+    margin-bottom: calc(0.9 * var(--mm));
+  }
+
+  .menu-item .item-price {
+    font-size: var(--fs-item);
+    color: var(--text-main);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .menu-desc {
+    font-size: var(--fs-desc);
+    color: var(--text-sub);
+    padding-left: 0;
+    padding-bottom: var(--row-pad);
+    margin-bottom: 0;
+  }
+
+  .overflow-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(15 * var(--mm) + 267 * var(--mm));
+    border-top: 1px dashed var(--danger);
+    display: none;
+  }
+
+  .a4-page.is-overflow .overflow-line {
+    display: block;
+  }
+
+  #pageNote {
+    font-size: 14px;
+    color: var(--text-on-bg);
+  }
+
+  @media print {
+    body, main {
+      margin: 0;
+      padding: 0;
+      background: #FFFFFF;
+    }
+    main > *:not(#printSection) {
+      display: none;
+    }
+    #printSection > *:not(#previewOuter) {
+      display: none;
+    }
+    #previewOuter {
+      border: none;
+      padding: 0;
+      overflow: visible;
+    }
+    #previewWrapper {
+      width: auto !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    #previewInner {
+      transform: none !important;
+    }
+    .a4-page {
+      width: 210mm !important;
+      height: 297mm !important;
+      padding: 15mm;
+      box-shadow: none;
+      margin: 0;
+    }
+    .overflow-line {
+      display: none !important;
+    }
+    @page {
+      size: A4;
+      margin: 0;
+    }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>メニュー表メーカー</h1>
+  <p class="lead">1行に「カテゴリ/品名,説明,価格」を入力してください（例: ドリンク/ブレンドコーヒー,店主が毎朝焙煎,480）。価格にカンマは使わないでください（例: 1480）</p>
+
+  <div>
+    <label for="titleInput">店名・表題（空でもよい）</label>
+    <input type="text" id="titleInput" placeholder="例: Cafe Nanairo">
+  </div>
+
+  <div>
+    <label for="itemsInput">メニュー内容（1行に1品）</label>
+    <textarea id="itemsInput" rows="8" placeholder="ドリンク/ブレンドコーヒー,店主が毎朝焙煎,480"></textarea>
+  </div>
+
+  <div class="size-toggle">
+    <label><input type="radio" name="fontSize" value="standard" checked> 標準</label>
+    <label><input type="radio" name="fontSize" value="small"> 小</label>
+  </div>
+
+  <div id="errorLine"></div>
+
+  <div id="printSection">
+    <div id="pageNote"></div>
+    <div id="previewOuter">
+      <div id="previewWrapper">
+        <div id="previewInner"></div>
+      </div>
+    </div>
+  </div>
+
+  <button id="printBtn" type="button">印刷する</button>
+</main>
+
+<script>
+(function () {
+  var titleInput = document.getElementById('titleInput');
+  var itemsInput = document.getElementById('itemsInput');
+  var errorLine = document.getElementById('errorLine');
+  var printBtn = document.getElementById('printBtn');
+  var previewOuter = document.getElementById('previewOuter');
+  var previewWrapper = document.getElementById('previewWrapper');
+  var previewInner = document.getElementById('previewInner');
+  var pageNoteEl = document.getElementById('pageNote');
+
+  var MM = 3.7795275591; // px per mm at 96dpi
+  var A4_W_MM = 210, A4_H_MM = 297;
+  var CONTENT_H_LIMIT_PX = 267 * MM; // 内容領域267mm
+
+  var lastScale = 1;
+
+  function getFontSize() {
+    var checked = document.querySelector('input[name="fontSize"]:checked');
+    return checked ? checked.value : 'standard';
+  }
+
+  // 1行を「品名欄（最初の区切りまで）」「価格（最後の区切り以降）」
+  // 「説明（その間・無ければ空）」に切り分ける。
+  // 区切り文字はカンマ優先。その行にカンマが1つも無い場合のみTABとして再パースする。
+  function parseLine(line) {
+    var sep = line.indexOf(',') !== -1 ? ',' : (line.indexOf('\t') !== -1 ? '\t' : null);
+    if (sep === null) return null;
+
+    var firstIdx = line.indexOf(sep);
+    var lastIdx = line.lastIndexOf(sep);
+
+    var nameField = line.slice(0, firstIdx).trim();
+    var priceRaw = line.slice(lastIdx + 1).trim();
+    var desc = firstIdx === lastIdx ? '' : line.slice(firstIdx + 1, lastIdx).trim();
+
+    // 価格欄に¥記号が含まれる行は、区切り文字との衝突を避けるため常にエラー行として弾く
+    if (/[¥]/.test(priceRaw)) {
+      return null;
+    }
+    // 価格が桁区切りカンマ（例: 1,480）で書かれていると、区切り文字のカンマと衝突し、
+    // 「1」が説明欄に紛れ込んで価格が480に化ける（エラーにもならず静かに値を取り違える）。
+    // 区切り文字がカンマの場合、行末が「,数字(1〜3桁),数字(3桁)」の形なら
+    // 桁区切りカンマの疑いとして常にエラー行にする。
+    if (sep === ',' && /,\s*\d{1,3}\s*,\s*\d{3}\s*$/.test(line)) {
+      return null;
+    }
+
+    var price = Number(priceRaw);
+    if (nameField === '' || priceRaw === '' || isNaN(price) || price < 0 || !isFinite(price)) {
+      return null;
+    }
+
+    var category = null;
+    var itemName = nameField;
+    var slashIdx = nameField.indexOf('/');
+    if (slashIdx !== -1) {
+      category = nameField.slice(0, slashIdx).trim();
+      itemName = nameField.slice(slashIdx + 1).trim();
+    }
+    if (itemName === '') return null;
+
+    return { category: category, name: itemName, desc: desc, price: price };
+  }
+
+  function parseAll(raw) {
+    var rawLines = raw.split(/\r\n|\r|\n/);
+    var items = [];
+    var errorLineNumbers = [];
+    var currentCategory = null;
+
+    for (var i = 0; i < rawLines.length; i++) {
+      var line = rawLines[i];
+      if (line.trim() === '') continue;
+
+      var parsed = parseLine(line);
+      if (parsed === null) {
+        errorLineNumbers.push(i + 1);
+        continue;
+      }
+
+      if (parsed.category !== null) {
+        currentCategory = parsed.category;
+      }
+
+      items.push({
+        category: currentCategory,
+        name: parsed.name,
+        desc: parsed.desc,
+        price: parsed.price
+      });
+    }
+
+    return { items: items, errorLineNumbers: errorLineNumbers };
+  }
+
+  function groupByCategory(items) {
+    // Mapはnullをキーとしてそのまま扱えるため、文字列マジックナンバーでの
+    // 「カテゴリ無し」表現（実データの'__NONE__'入力と衝突しうる）を避けられる
+    var order = [];
+    var map = new Map();
+    for (var i = 0; i < items.length; i++) {
+      var key = items[i].category;
+      if (!map.has(key)) {
+        map.set(key, []);
+        order.push(key);
+      }
+      map.get(key).push(items[i]);
+    }
+    return order.map(function (key) {
+      return { category: key, items: map.get(key) };
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function formatPrice(price) {
+    return '¥' + Number(price).toLocaleString('ja-JP');
+  }
+
+  function buildA4Html(title, groups, sizeKey) {
+    var html = '<div class="a4-page' + (sizeKey === 'small' ? ' size-small' : '') + '" id="a4Page">';
+    html += '<div class="overflow-line"></div>';
+    html += '<div id="a4Content">';
+
+    if (title.trim() !== '') {
+      html += '<div class="menu-title">' + escapeHtml(title.trim()) + '</div>';
+    }
+
+    for (var g = 0; g < groups.length; g++) {
+      var group = groups[g];
+      if (group.category !== null) {
+        html += '<div class="menu-category">' + escapeHtml(group.category) + '</div>';
+      }
+      for (var i = 0; i < group.items.length; i++) {
+        var item = group.items[i];
+        html += '<div class="menu-item">';
+        html += '<span class="item-name">' + escapeHtml(item.name) + '</span>';
+        html += '<span class="leader"></span>';
+        html += '<span class="item-price">' + formatPrice(item.price) + '</span>';
+        html += '</div>';
+        if (item.desc !== '') {
+          html += '<div class="menu-desc">' + escapeHtml(item.desc) + '</div>';
+        }
+      }
+    }
+
+    html += '</div>'; // #a4Content
+    html += '</div>'; // .a4-page
+    return html;
+  }
+
+  function render() {
+    var raw = itemsInput.value;
+    var title = titleInput.value;
+    var sizeKey = getFontSize();
+
+    if (raw.trim() === '') {
+      showError('メニュー内容を1行以上入力してください（「カテゴリ/品名,説明,価格」の形式）');
+      previewInner.innerHTML = '';
+      previewWrapper.style.width = '0px';
+      previewWrapper.style.height = '0px';
+      pageNoteEl.textContent = '';
+      return;
+    }
+
+    var parsed = parseAll(raw);
+
+    if (parsed.items.length === 0) {
+      showError('有効な行がありません（「カテゴリ/品名,説明,価格」の形式で入力してください）');
+      previewInner.innerHTML = '';
+      previewWrapper.style.width = '0px';
+      previewWrapper.style.height = '0px';
+      pageNoteEl.textContent = '';
+      return;
+    }
+
+    if (parsed.errorLineNumbers.length > 0) {
+      var lineLabel = parsed.errorLineNumbers.map(function (n) { return n + '行目'; }).join('・');
+      showError('⚠ ' + lineLabel + 'を読み取れませんでした（「品名,説明,価格」の形式で入力してください）');
+    } else {
+      hideError();
+    }
+
+    var groups = groupByCategory(parsed.items);
+    previewInner.innerHTML = buildA4Html(title, groups, sizeKey);
+    pageNoteEl.textContent = '合計 ' + parsed.items.length + '品';
+
+    applyScale();
+    checkOverflow();
+  }
+
+  function showError(msg) {
+    errorLine.textContent = msg;
+    errorLine.classList.add('show');
+  }
+
+  function hideError() {
+    errorLine.textContent = '';
+    errorLine.classList.remove('show');
+  }
+
+  function checkOverflow() {
+    var page = document.getElementById('a4Page');
+    var content = document.getElementById('a4Content');
+    if (!page || !content) return;
+
+    // #a4Content はページ側の固定高さ(297mm)の制約を受けない自然な高さで測る
+    var contentHeight = content.scrollHeight;
+
+    var isOverflow = contentHeight > CONTENT_H_LIMIT_PX;
+    page.classList.toggle('is-overflow', isOverflow);
+
+    if (isOverflow) {
+      var overflowMsg = '⚠ A4 1枚に収まりません。文字サイズを「小」にするか、行を減らしてください';
+      if (errorLine.classList.contains('show') && errorLine.textContent.indexOf('読み取れませんでした') !== -1) {
+        errorLine.textContent = errorLine.textContent + ' / ' + overflowMsg;
+      } else {
+        showError(overflowMsg);
+      }
+    }
+  }
+
+  function applyScale() {
+    var containerWidth = previewOuter.clientWidth - 16; // padding分を引く
+    if (containerWidth <= 0) {
+      previewInner.style.transform = 'scale(' + lastScale + ')';
+      return;
+    }
+
+    var actualWidth = A4_W_MM * MM;
+    var scale = containerWidth / actualWidth;
+    if (!isFinite(scale) || scale <= 0) {
+      scale = lastScale > 0 ? lastScale : 0.3;
+    }
+    scale = Math.min(scale, 1);
+
+    lastScale = scale;
+
+    var actualHeightPx = previewInner.scrollHeight || (A4_H_MM * MM);
+
+    previewInner.style.transform = 'scale(' + scale + ')';
+    previewWrapper.style.width = (actualWidth * scale) + 'px';
+    previewWrapper.style.height = (actualHeightPx * scale) + 'px';
+  }
+
+  itemsInput.addEventListener('input', render);
+  titleInput.addEventListener('input', render);
+  document.querySelectorAll('input[name="fontSize"]').forEach(function (radio) {
+    radio.addEventListener('change', render);
+  });
+
+  printBtn.addEventListener('click', function () {
+    window.print();
+  });
+
+  window.addEventListener('resize', function () {
+    applyScale();
+  });
+
+  // 初期表示（架空のサンプル）
+  titleInput.value = 'Cafe Nanairo';
+  itemsInput.value = [
+    'ドリンク/ブレンドコーヒー,店主が毎朝焙煎,480',
+    'ドリンク/カフェラテ,ミルク多め,520',
+    'フード/本日のスープ,,420'
+  ].join('\n');
+  render();
+})();
+</script>
+</body>
+</html>
